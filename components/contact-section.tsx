@@ -40,13 +40,18 @@ export default function ContactSection({ isVisible }: ContactSectionProps) {
           >
             <CardContent className="p-8">
               <h3 className="text-2xl font-serif text-rose-900 mb-6">Book Your Consultation</h3>
-              <form className="space-y-6">
+              <form className="space-y-6" 
+              action="https://formspree.io/f/mjkrelyp"
+              method="POST">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="group">
                     <label className="block text-sm font-medium text-gray-700 mb-2 group-focus-within:text-rose-600 transition-colors">
                       First Name
                     </label>
                     <Input
+                    type="text"
+                    name="first_name"
+                    required
                       placeholder="Your first name"
                       className="border-rose-200 focus:border-rose-400 transition-all duration-300 focus:scale-105"
                     />
@@ -56,6 +61,9 @@ export default function ContactSection({ isVisible }: ContactSectionProps) {
                       Last Name
                     </label>
                     <Input
+                    type="text"
+                    name="last_name"
+                    required
                       placeholder="Your last name"
                       className="border-rose-200 focus:border-rose-400 transition-all duration-300 focus:scale-105"
                     />
@@ -67,6 +75,8 @@ export default function ContactSection({ isVisible }: ContactSectionProps) {
                   </label>
                   <Input
                     type="email"
+                    name="email"
+                    required
                     placeholder="your.email@example.com"
                     className="border-rose-200 focus:border-rose-400 transition-all duration-300 focus:scale-105"
                   />
@@ -77,6 +87,8 @@ export default function ContactSection({ isVisible }: ContactSectionProps) {
                   </label>
                   <Input
                     type="tel"
+                    name="phone"
+                    required
                     placeholder="Your phone number"
                     className="border-rose-200 focus:border-rose-400 transition-all duration-300 focus:scale-105"
                   />
@@ -87,6 +99,8 @@ export default function ContactSection({ isVisible }: ContactSectionProps) {
                   </label>
                   <Input
                     type="date"
+                    name="date"
+            
                     className="border-rose-200 focus:border-rose-400 transition-all duration-300 focus:scale-105"
                   />
                 </div>
@@ -94,12 +108,16 @@ export default function ContactSection({ isVisible }: ContactSectionProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2 group-focus-within:text-rose-600 transition-colors">
                     Services Interested In
                   </label>
-                  <select className="w-full p-3 border border-rose-200 rounded-md focus:border-rose-400 focus:outline-none transition-all duration-300 focus:scale-105">
-                    <option>Wedding Photography</option>
-                    <option>Pre-Wedding Shoot</option>
-                    <option>Cinematic Video</option>
-                    <option>Complete Package</option>
-                    <option>Custom Package</option>
+                  <select 
+                  name="service"
+                  required
+                  className="w-full p-3 border border-rose-200 rounded-md focus:border-rose-400 focus:outline-none transition-all duration-300 focus:scale-105">
+                    <option value="">Select service</option>
+                    <option value="Wedding Photography">Wedding Photography</option>
+                    <option value="Pre-Wedding Shoot">Pre-Wedding Shoot</option>
+                    <option value="Cinematic Video">Cinematic Video</option>
+                    <option value="Complete Package">Complete Package</option>
+                    <option value="Custom Package">Custom Package</option>
                   </select>
                 </div>
                 <div className="group">
@@ -107,6 +125,7 @@ export default function ContactSection({ isVisible }: ContactSectionProps) {
                     Tell us about your vision
                   </label>
                   <Textarea
+                  name="message"
                     placeholder="Share your ideas, preferences, and any special requirements..."
                     className="border-rose-200 focus:border-rose-400 min-h-[120px] transition-all duration-300 focus:scale-105"
                   />
