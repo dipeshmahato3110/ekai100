@@ -4,7 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Ekai 100',
   description: 'Created by Ekai 100',
-  metadataBase: new URL('http://localhost:3000'),
+  // metadataBase: new URL('http://localhost:3000'), // Removed hardcoded port
   // generator: 'v0.dev',
   icons: {
     icon: [

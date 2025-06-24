@@ -12,6 +12,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ scrollToSection, scrollY }: HeroSectionProps) {
   const [currentHeroImage, setCurrentHeroImage] = useState(0)
+  const [imageError, setImageError] = useState(false)
 
   const heroImages = ["/images/hero-1.jpg", "/images/hero-2.jpg", "/images/hero-3.jpg"]
 
@@ -23,25 +24,35 @@ export default function HeroSection({ scrollToSection, scrollY }: HeroSectionPro
     return () => clearInterval(interval)
   }, [heroImages.length])
 
+  const handleImageError = () => {
+    setImageError(true)
+  }
+
   return (
     <section id="home" className="relative h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        {heroImages.map((image, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-all duration-2000 ${
-              index === currentHeroImage ? "opacity-100 scale-100" : "opacity-0 scale-105"
-            }`}
-          >
-            <Image
-              src={image || "/placeholder.svg"}
-              alt="Wedding Photography"
-              fill
-              className="object-cover"
-              priority={index === 0}
-            />
-          </div>
-        ))}
+        {!imageError ? (
+          heroImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-all duration-2000 ${
+                index === currentHeroImage ? "opacity-100 scale-100" : "opacity-0 scale-105"
+              }`}
+            >
+              <Image
+                src={image}
+                alt="Wedding Photography"
+                fill
+                className="object-cover"
+                priority={index === 0}
+                onError={handleImageError}
+              />
+            </div>
+          ))
+        ) : (
+          // Fallback background if images fail to load
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-400 via-purple-500 to-pink-500" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/50" />
       </div>
 
