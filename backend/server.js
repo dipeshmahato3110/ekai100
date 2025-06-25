@@ -41,7 +41,9 @@ app.use('/api/portfolio', createCrudRoutes(PortfolioItem));
 
 // Special route for contact messages (no auth needed for creation)
 const contactRoutes = require('./routes/contact');
+const testimonialsRoutes = require('./routes/testimonials');
 app.use('/api/contact', contactRoutes);
+app.use('/api/testimonials', testimonialsRoutes);
 
 // Connect to MongoDB
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ekai100';

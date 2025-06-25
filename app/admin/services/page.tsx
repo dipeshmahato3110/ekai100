@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, Edit, PlusCircle } from 'lucide-react';
+import { Trash2, Edit, PlusCircle, Moon, Sun } from 'lucide-react';
+import { DarkModeToggle } from '@/components/theme-provider';
 
 interface Service {
     _id: string;
@@ -23,18 +24,23 @@ const ServicesPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [currentService, setCurrentService] = useState<Partial<Service> | null>(null);
+    const [token, setToken] = useState<string | null>(null);
+    const [isDark, setIsDark] = useState(() =>
+      typeof window !== 'undefined' ? document.documentElement.classList.contains('dark') : false
+    );
 
     const api = axios.create({
         baseURL: 'http://localhost:5000/api',
     });
 
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
             router.push('/admin/login');
             return;
         }
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setToken(authToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
         fetchServices();
     }, [router]);
 
@@ -42,8 +48,13 @@ const ServicesPage = () => {
         try {
             const response = await api.get('/services');
             setServices(response.data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch services', error);
+            if (error.response?.status === 401) {
+                alert('Authentication failed. Please log in again.');
+                localStorage.removeItem('authToken');
+                router.push('/admin/login');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -59,9 +70,15 @@ const ServicesPage = () => {
             try {
                 await api.delete(`/services/${id}`);
                 fetchServices(); // Refresh the list
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to delete service', error);
-                alert('Failed to delete service.');
+                if (error.response?.status === 401) {
+                    alert('Authentication failed. Please log in again.');
+                    localStorage.removeItem('authToken');
+                    router.push('/admin/login');
+                } else {
+                    alert('Failed to delete service.');
+                }
             }
         }
     };
@@ -74,22 +91,40 @@ const ServicesPage = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentService) return;
+        if (!currentService || !token) {
+            alert('Authentication token missing. Please log in again.');
+            router.push('/admin/login');
+            return;
+        }
 
         try {
+            // Ensure token is included in the request
+            const config = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+
             if (isEditing && currentService._id) {
                 // Update existing service
-                await api.patch(`/services/${currentService._id}`, currentService);
+                await api.patch(`/services/${currentService._id}`, currentService, config);
             } else {
                 // Create new service
-                await api.post('/services', currentService);
+                await api.post('/services', currentService, config);
             }
             resetForm();
             fetchServices();
         } catch (error: any) {
             console.error('Failed to save service', error);
-            const errorMessage = error.response?.data?.message || error.message || 'An unknown error occurred.';
-            alert(`Save Error: ${errorMessage}`);
+            if (error.response?.status === 401) {
+                alert('Authentication failed. Please log in again.');
+                localStorage.removeItem('authToken');
+                router.push('/admin/login');
+            } else {
+                const errorMessage = error.response?.data?.message || error.message || 'An unknown error occurred.';
+                alert(`Save Error: ${errorMessage}`);
+            }
         }
     };
 
@@ -103,15 +138,29 @@ const ServicesPage = () => {
         setCurrentService({ title: '', description: '', icon: '' });
     };
 
+    const toggleDarkMode = () => {
+      if (typeof window !== 'undefined') {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+          html.classList.remove('dark');
+          setIsDark(false);
+        } else {
+          html.classList.add('dark');
+          setIsDark(true);
+        }
+      }
+    };
+
     if (isLoading) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
     return (
-        <div className="container mx-auto p-4">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">Manage Services</h1>
-                <Button onClick={() => router.push('/admin')}>Back to Dashboard</Button>
+        <div className="container mx-auto p-4 min-h-screen bg-background text-foreground transition-colors duration-500 animate-fade-in">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 relative">
+                <h1 className="text-3xl font-bold text-primary">Manage Services</h1>
+                <Button onClick={() => router.push('/admin')} variant="outline" className="transition-all duration-300 hover:scale-105">Back to Dashboard</Button>
+                <DarkModeToggle className="bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground shadow-md" />
             </div>
 
             {currentService ? (
@@ -152,7 +201,7 @@ const ServicesPage = () => {
             )}
 
 
-            <Card className="mt-6">
+            <Card className="mt-6 bg-card text-card-foreground shadow-xl animate-fade-in-up">
                 <CardHeader>
                     <CardTitle>Existing Services</CardTitle>
                 </CardHeader>

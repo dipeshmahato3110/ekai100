@@ -2,8 +2,25 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const auth = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
+
+// Multer setup for profile photo upload
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadPath = path.join(__dirname, '../uploads/admin');
+        fs.mkdirSync(uploadPath, { recursive: true });
+        cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage });
 
 // Route to create a first admin user (should be used only once)
 router.post('/register', async (req, res) => {
@@ -47,5 +64,41 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Route to get current admin profile
+router.get('/me', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select('-password');
+        if (!user) return res.status(404).json({ message: 'User not found.' });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch profile.' });
+    }
+});
+
+// Route to update admin email or password
+router.put('/me', auth, async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const update = {};
+        if (email) update.email = email;
+        if (password) update.password = await bcrypt.hash(password, 12);
+        const user = await User.findByIdAndUpdate(req.userId, update, { new: true }).select('-password');
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to update profile.' });
+    }
+});
+
+// Route to upload/change profile photo
+router.post('/me/photo', auth, upload.single('profilePhoto'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
+        const photoUrl = `/uploads/admin/${req.file.filename}`;
+        const user = await User.findByIdAndUpdate(req.userId, { profilePhoto: photoUrl }, { new: true }).select('-password');
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to upload photo.' });
+    }
+});
 
 module.exports = router; 

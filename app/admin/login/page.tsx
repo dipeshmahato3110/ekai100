@@ -10,18 +10,34 @@ import axios from 'axios';
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsLoading(true);
+        setError('');
+        
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+            const response = await axios.post('http://localhost:5000/api/auth/login', { 
+                email, 
+                password 
+            });
+            
             const { token } = response.data;
-            localStorage.setItem('authToken', token);
-            // Redirect to admin dashboard
-            window.location.href = '/admin'; 
-        } catch (error) {
+            if (token) {
+                localStorage.setItem('authToken', token);
+                // Redirect to admin dashboard
+                window.location.href = '/admin';
+            } else {
+                setError('No token received from server');
+            }
+        } catch (error: any) {
             console.error('Login failed', error);
-            // Here you can add logic to show an error message to the user
+            const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+            setError(errorMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -38,15 +54,37 @@ const LoginPage = () => {
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                            <Input 
+                                id="email" 
+                                type="email" 
+                                placeholder="m@example.com" 
+                                required 
+                                value={email} 
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isLoading}
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="password">Password</Label>
-                            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                            <Input 
+                                id="password" 
+                                type="password" 
+                                required 
+                                value={password} 
+                                onChange={(e) => setPassword(e.target.value)}
+                                disabled={isLoading}
+                            />
                         </div>
+                        {error && (
+                            <div className="text-red-500 text-sm">
+                                {error}
+                            </div>
+                        )}
                     </CardContent>
                     <CardFooter>
-                        <Button className="w-full" type="submit">Sign in</Button>
+                        <Button className="w-full" type="submit" disabled={isLoading}>
+                            {isLoading ? 'Signing in...' : 'Sign in'}
+                        </Button>
                     </CardFooter>
                 </form>
             </Card>

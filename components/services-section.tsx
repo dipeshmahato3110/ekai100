@@ -31,13 +31,14 @@ export default function ServicesSection({ isVisible }: ServicesSectionProps) {
 
   useEffect(() => {
     const fetchServices = async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/services');
-            setServices(response.data);
-        } catch (error) {
-            console.error("Failed to fetch services:", error);
-            // Optionally, set some default/fallback services or show an error message
-        }
+      try {
+        const response = await axios.get('http://localhost:5000/api/services');
+        setServices(response.data);
+        console.log('Fetched services:', response.data);
+      } catch (error) {
+        console.error("Failed to fetch services:", error);
+        // Optionally, set some default/fallback services or show an error message
+      }
     };
 
     fetchServices();

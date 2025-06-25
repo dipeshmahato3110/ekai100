@@ -1,132 +1,260 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Image from "next/image"
+import { useEffect, useState, useRef } from "react"
+import axios from "axios"
 import { Card, CardContent } from "@/components/ui/card"
-import { Star } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Sparkles, Star, Camera, Upload } from "lucide-react"
 
-interface TestimonialsSectionProps {
-  isVisible: { [key: string]: boolean }
+interface Testimonial {
+  _id: string
+  name: string
+  message: string
+  photo?: string
+  rating: number
+  createdAt: string
 }
 
-export default function TestimonialsSection({ isVisible }: TestimonialsSectionProps) {
-  const [currentTestimonial, setCurrentTestimonial] = useState(0)
+// Star Rating Component
+function StarRating({ rating, onRatingChange, readonly = false }: { 
+  rating: number, 
+  onRatingChange?: (rating: number) => void,
+  readonly?: boolean 
+}) {
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => !readonly && onRatingChange?.(star)}
+          className={`transition-all duration-200 ${
+            readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'
+          }`}
+          disabled={readonly}
+        >
+          <Star
+            className={`w-6 h-6 ${
+              star <= rating
+                ? 'text-yellow-400 fill-current'
+                : 'text-gray-300'
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  )
+}
 
-  const testimonials = [
-    {
-      name: "Sarah & Michael",
-      text: "Absolutely breathtaking work! They captured every emotion and created memories we'll treasure forever.",
-      rating: 5,
-      image: "/images/testimonial-1.jpg",
-    },
-    {
-      name: "Priya & Arjun",
-      text: "The attention to detail and artistic vision exceeded our expectations. Our wedding film is pure magic.",
-      rating: 5,
-      image: "/images/testimonial-2.jpg",
-    },
-    {
-      name: "Emma & James",
-      text: "Professional, creative, and so easy to work with. They made our special day even more beautiful.",
-      rating: 5,
-      image: "/images/testimonial-3.jpg",
-    },
-    {
-      name: "David & Lisa",
-      text: "The team went above and beyond to capture our special moments. Truly exceptional service and artistry.",
-      rating: 5,
-      image: "/images/testimonial-4.jpg",
-    },
-    {
-      name: "Raj & Meera",
-      text: "Every photo tells a story. They have an incredible eye for detail and emotion. Highly recommended!",
-      rating: 5,
-      image: "/images/testimonial-5.jpg",
-    },
-  ]
+export default function TestimonialsSection() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [name, setName] = useState("")
+  const [message, setMessage] = useState("")
+  const [rating, setRating] = useState(5)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string>("")
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState("")
+  const [error, setError] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Auto-scrolling testimonials
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [testimonials.length])
+    const fetchTestimonials = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/testimonials")
+        setTestimonials(res.data)
+      } catch (err) {
+        setError("Failed to load testimonials.")
+      }
+    }
+    fetchTestimonials()
+  }, [])
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setPhoto(file)
+      setPhotoPreview(URL.createObjectURL(file))
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+    setSuccess("")
+    
+    try {
+      const formData = new FormData()
+      formData.append('name', name)
+      formData.append('message', message)
+      formData.append('rating', rating.toString())
+      if (photo) {
+        formData.append('photo', photo)
+      }
+
+      await axios.post("http://localhost:5000/api/testimonials", formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      
+      setSuccess("Thank you for your feedback! Your testimonial is pending approval.")
+      setName("")
+      setMessage("")
+      setRating(5)
+      setPhoto(null)
+      setPhotoPreview("")
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    } catch (err) {
+      setError("Failed to submit testimonial.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <section id="testimonials" className="py-20 bg-white relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-20 text-9xl font-serif text-rose-900">"</div>
-        <div className="absolute bottom-20 right-20 text-9xl font-serif text-rose-900 rotate-180">"</div>
+    <section id="testimonials" className="py-20 bg-gradient-to-b from-amber-50 to-rose-50 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <div className="absolute top-10 left-10 w-20 h-20 bg-rose-200 rounded-full animate-float"></div>
+        <div className="absolute bottom-20 right-20 w-16 h-16 bg-amber-200 rounded-full animate-float-delayed"></div>
       </div>
-
       <div className="container mx-auto px-4 relative">
-        <div
-          data-animate
-          id="testimonials-header"
-          className={`text-center mb-16 transition-all duration-1000 ${
-            isVisible["testimonials-header"] ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-          }`}
-        >
-          <h2 className="text-4xl md:text-5xl font-serif text-rose-900 mb-6">What Our Couples Say</h2>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-            Don't just take our word for it. Here's what our happy couples have to say about their experience with us.
+        <div className="text-center mb-16 animate-fade-in-up">
+          <h2 className="text-4xl md:text-5xl font-serif text-rose-900 mb-6 flex items-center justify-center gap-2">
+            <Sparkles className="text-rose-400 animate-twinkle" size={32} />
+            Testimonials
+          </h2>
+          <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+            Hear from our happy couples and clients!
           </p>
         </div>
-
-        {/* Auto-Scrolling Testimonial Carousel */}
-        <div className="relative max-w-4xl mx-auto">
-          <div className="overflow-hidden rounded-2xl">
-            <div
-              className="flex transition-transform duration-1000 ease-in-out"
-              style={{ transform: `translateX(-${currentTestimonial * 100}%)` }}
-            >
-              {testimonials.map((testimonial, index) => (
-                <div key={index} className="w-full flex-shrink-0 px-8 py-12">
-                  <Card className="bg-white shadow-2xl border-rose-100 transform hover:scale-105 transition-all duration-300">
-                    <CardContent className="p-12 text-center">
-                      <div className="flex justify-center mb-6">
-                        <Image
-                          src={testimonial.image || "/placeholder.svg"}
-                          alt={testimonial.name}
-                          width={80}
-                          height={80}
-                          className="rounded-full shadow-lg"
-                        />
-                      </div>
-                      <div className="flex justify-center mb-6">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className="text-yellow-400 fill-current animate-twinkle"
-                            size={24}
-                            style={{ animationDelay: `${i * 100}ms` }}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-xl text-gray-700 mb-8 italic leading-relaxed font-light">
-                        "{testimonial.text}"
-                      </p>
-                      <h4 className="text-2xl font-serif text-rose-900">{testimonial.name}</h4>
-                    </CardContent>
-                  </Card>
-                </div>
-              ))}
+        
+        {/* Testimonials Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 animate-fade-in">
+          {testimonials.length === 0 && (
+            <div className="text-gray-500 col-span-full text-center py-8">
+              No testimonials yet. Be the first to share your experience!
             </div>
-          </div>
+          )}
+          {testimonials.map((t) => (
+            <Card key={t._id} className="border-rose-100 bg-white/80 backdrop-blur-sm shadow-lg animate-scale-in hover:shadow-xl transition-shadow duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4 mb-4">
+                  {t.photo ? (
+                    <img 
+                      src={`http://localhost:5000${t.photo}`} 
+                      alt={t.name}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-rose-200"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-200 to-amber-200 flex items-center justify-center border-2 border-rose-200">
+                      <span className="text-rose-600 font-bold text-lg">
+                        {t.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-rose-700 text-lg">{t.name}</span>
+                      <span className="text-xs text-gray-400">{new Date(t.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <StarRating rating={t.rating || 5} readonly />
+                  </div>
+                </div>
+                <div className="text-gray-700 italic">"{t.message}"</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-          {/* Testimonial Navigation Dots */}
-          <div className="flex justify-center mt-8 space-x-2">
-            {testimonials.map((_, index) => (
-              <button
-                key={index}
-                className={`w-3 h-3 rounded-full transition-all duration-300 transform hover:scale-125 ${
-                  index === currentTestimonial ? "bg-rose-600 scale-110" : "bg-rose-200"
-                }`}
-                onClick={() => setCurrentTestimonial(index)}
+        {/* Submit Testimonial Form */}
+        <div className="max-w-2xl mx-auto bg-white/90 rounded-xl shadow-lg p-8 border border-rose-100 animate-fade-in-up">
+          <h3 className="text-2xl font-serif text-rose-900 mb-6 text-center">Share Your Experience</h3>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="testimonial-name">Your Name *</Label>
+                <Input 
+                  id="testimonial-name" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  required 
+                  disabled={loading}
+                  placeholder="Enter your name"
+                />
+              </div>
+              <div>
+                <Label>Your Rating *</Label>
+                <div className="mt-2">
+                  <StarRating rating={rating} onRatingChange={setRating} />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="testimonial-message">Your Feedback *</Label>
+              <Textarea 
+                id="testimonial-message" 
+                value={message} 
+                onChange={e => setMessage(e.target.value)} 
+                required 
+                disabled={loading}
+                placeholder="Share your experience with us..."
+                rows={4}
               />
-            ))}
-          </div>
+            </div>
+
+            <div>
+              <Label>Your Photo (Optional)</Label>
+              <div className="mt-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                  disabled={loading}
+                />
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Choose Photo
+                  </Button>
+                  {photoPreview && (
+                    <div className="flex items-center gap-2">
+                      <img 
+                        src={photoPreview} 
+                        alt="Preview" 
+                        className="w-12 h-12 rounded-full object-cover border-2 border-rose-200"
+                      />
+                      <span className="text-sm text-gray-600">Photo selected</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {error && <div className="text-red-500 text-center animate-fade-in bg-red-50 p-3 rounded-lg">{error}</div>}
+            {success && <div className="text-green-600 text-center animate-fade-in bg-green-50 p-3 rounded-lg">{success}</div>}
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white" 
+              disabled={loading}
+            >
+              {loading ? "Submitting..." : "Submit Testimonial"}
+            </Button>
+          </form>
         </div>
       </div>
     </section>
